@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getProductById } from "@/data/products";
 import {
   getSubscriptionPlanById,
@@ -16,10 +15,12 @@ type SubscribeRequest = {
 export async function POST(request: Request) {
   try {
     const origin = new URL(request.url).origin;
-    const cookieStore = await cookies();
-    const userEmail = cookieStore.get("headphones_session")?.value;
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!userEmail) {
+    if (!user) {
       return NextResponse.json(
         { error: "Please login before subscribing." },
         { status: 401 }
@@ -58,9 +59,9 @@ export async function POST(request: Request) {
       cancel_url: `${origin}/cancel`,
     });
 
-    const supabase = createSupabaseServerClient();
     const { error } = await supabase.from("product_subscriptions").insert({
-      user_email: decodeURIComponent(userEmail),
+      user_id: user.id,
+      user_email: user.email,
       product_id: product?.id ?? null,
       product_name: product?.name ?? "General headphone care",
       product_image: product?.image ?? null,

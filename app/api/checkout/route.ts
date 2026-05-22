@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getProductById, products } from "@/data/products";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
@@ -12,10 +11,12 @@ export async function POST(request: Request) {
 
   try {
     const origin = new URL(request.url).origin;
-    const cookieStore = await cookies();
-    const userEmail = cookieStore.get("headphones_session")?.value;
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!userEmail) {
+    if (!user) {
       return NextResponse.json(
         { error: "Please login before checkout." },
         { status: 401 }
@@ -53,9 +54,9 @@ export async function POST(request: Request) {
       cancel_url: `${origin}/cancel`,
     });
 
-    const supabase = createSupabaseServerClient();
     const { error } = await supabase.from("orders").insert({
-      user_email: decodeURIComponent(userEmail),
+      user_id: user.id,
+      user_email: user.email,
       product_id: product.id,
       product_name: product.name,
       product_image: product.image,

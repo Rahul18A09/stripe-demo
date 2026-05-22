@@ -7,7 +7,11 @@ import { login } from "@/app/actions/auth";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: "logout"; next?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    message?: "logout" | "signup";
+    next?: string;
+  }>;
 }) {
   const params = await searchParams;
 
@@ -26,6 +30,8 @@ export default async function LoginPage({
             <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
               {params.error === "supabase"
                 ? "Supabase is not ready. Check your environment keys and users table."
+                : params.error === "invalid"
+                  ? "Invalid email or password."
                 : "Please enter your email and password."}
             </p>
           )}

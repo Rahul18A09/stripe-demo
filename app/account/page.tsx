@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import PopupMessage from "@/components/PopupMessage";
@@ -44,23 +45,23 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-async function getAccountData(email: string) {
+async function getAccountData(userId: string) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const [ordersResult, subscriptionsResult] = await Promise.all([
       supabase
         .from("orders")
         .select(
           "id, product_name, product_image, amount, currency, status, created_at"
         )
-        .eq("user_email", email)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false }),
       supabase
         .from("product_subscriptions")
         .select(
           "id, product_name, product_image, plan_name, amount, currency, interval, status, created_at"
         )
-        .eq("user_email", email)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -84,11 +85,18 @@ export default async function AccountPage({
   searchParams: Promise<{ message?: "login" | "signup" }>;
 }) {
   const params = await searchParams;
-  const cookieStore = await cookies();
-  const email = decodeURIComponent(
-    cookieStore.get("headphones_session")?.value ?? "customer@example.com"
-  );
-  const { orders, subscriptions, error } = await getAccountData(email);
+  await cookies();
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const email = user.email ?? "customer@example.com";
+  const { orders, subscriptions, error } = await getAccountData(user.id);
 
   return (
     <main className="min-h-screen bg-[#f7f8fb]">

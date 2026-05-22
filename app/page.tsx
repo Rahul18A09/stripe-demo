@@ -39,7 +39,7 @@ export default function HomePage() {
                             </Link>
 
                             <Link
-                                href="/contact"
+                                href="/products"
                                 className="px-8 py-4 rounded-lg bg-white border border-gray-200 text-gray-900 font-semibold text-lg hover:border-black hover:shadow-lg transition"
                             >
                                 Explore More
