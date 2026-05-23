@@ -28,7 +28,7 @@ export default async function SignupPage({
                     {params.error && (
                         <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
                             {params.error === "supabase"
-                                ? "Supabase is not ready. Check your environment keys and users table."
+                                ? "Signup could not finish. Check Supabase Auth settings, RLS policies, and environment keys."
                                 : params.error === "invalid"
                                     ? "Please fill all fields correctly."
                                     : "Something went wrong."}

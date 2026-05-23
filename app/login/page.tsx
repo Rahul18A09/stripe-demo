@@ -9,7 +9,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{
     error?: string;
-    message?: "logout" | "signup";
+    message?: "logout" | "signup" | "check-email";
     next?: string;
   }>;
 }) {

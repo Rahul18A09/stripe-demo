@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 function readText(formData: FormData, key: string) {
@@ -39,6 +40,9 @@ export async function login(formData: FormData) {
   const email = readText(formData, "email");
   const password = readText(formData, "password");
 
+  console.log("EMAIL", email);
+  console.log("PASSWORD", password);
+
   if (!email || !password) {
     redirect("/login?error=missing");
   }
@@ -48,6 +52,10 @@ export async function login(formData: FormData) {
     email,
     password,
   });
+
+
+  console.log("LOGIN ERROR: ", error );
+  console.log("LOGIN DATA:", data);
 
   if (error || !data.user) {
     redirect("/login?error=invalid");
@@ -80,40 +88,49 @@ export async function signup(formData: FormData) {
     redirect("/signup?error=invalid");
   }
 
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "";
+
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: `${origin}/auth/callback`,
       data: {
         name,
       },
     },
   });
 
-  if (error || !data.user) {
-    console.error("SIGNUP ERROR:", error);
+  if (error) {
+    console.error("SIGNUP ERROR:", error.message);
     redirect("/signup?error=supabase");
   }
 
-  try {
-    await saveUserToSupabase({
-      authUserId: data.user.id,
-      email,
-      name,
-    });
-  } catch (error) {
-    console.error("DATABASE ERROR:", error);
-    redirect("/signup?error=supabase");
+  if (!data.user) {
+    redirect("/login?message=check-email");
+  }
+
+  if (data.session) {
+    try {
+      await saveUserToSupabase({
+        authUserId: data.user.id,
+        email,
+        name,
+      });
+    } catch (error) {
+      console.error("DATABASE ERROR:", error);
+      redirect("/signup?error=supabase");
+    }
   }
 
   revalidatePath("/", "layout");
 
-  // Email confirmation enabled
-  // if (!data.session) {
-  //   redirect("/login?message=check-email");
-  // }
+  if (!data.session) {
+    redirect("/login?message=check-email");
+  }
 
   redirect("/account?message=signup");
 }

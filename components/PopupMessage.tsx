@@ -7,6 +7,7 @@ const messages = {
   login: "Login successful.",
   signup: "Signup successful.",
   logout: "Logout successful.",
+  "check-email": "Account created. Please check your email to confirm signup.",
 };
 
 type PopupMessageProps = {
@@ -21,6 +22,7 @@ export default function PopupMessage({ type }: PopupMessageProps) {
       return;
     }
 
+    setVisible(true);
     const timer = window.setTimeout(() => setVisible(false), 3000);
 
     return () => window.clearTimeout(timer);
