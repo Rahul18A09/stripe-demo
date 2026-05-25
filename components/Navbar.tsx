@@ -11,18 +11,47 @@ import {
     ShoppingBag,
     UserPlus,
     UserRound,
+    X,
 } from "lucide-react";
 import { logout } from "@/app/actions/auth";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const NAV_LINKS = [
+    { href: "/", label: "Home" },
+    { href: "/products", label: "Products" },
+    { href: "/plans", label: "Plans" },
+    { href: "/contact", label: "Contact" },
+] as const;
 
 export default function Navbar() {
     const userMenuRef = useRef<HTMLDetailsElement>(null);
-    const mobileMenuRef = useRef<HTMLDetailsElement>(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const closeMenus = () => {
         userMenuRef.current?.removeAttribute("open");
-        mobileMenuRef.current?.removeAttribute("open");
+        setMobileMenuOpen(false);
     };
+
+    useEffect(() => {
+        const media = window.matchMedia("(min-width: 1024px)");
+
+        const handleChange = () => {
+            if (media.matches) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        handleChange();
+        media.addEventListener("change", handleChange);
+        return () => media.removeEventListener("change", handleChange);
+    }, []);
+
+    useEffect(() => {
+        document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [mobileMenuOpen]);
 
     return (
         <nav className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur">
@@ -35,19 +64,16 @@ export default function Navbar() {
                     <span className="truncate">Headphones</span>
                 </Link>
 
-                <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-                    <Link href="/" className="text-gray-600 hover:text-black transition">
-                        Home
-                    </Link>
-                    <Link href="/products" className="text-gray-600 hover:text-black transition">
-                        Products
-                    </Link>
-                    <Link href="/plans" className="text-gray-600 hover:text-black transition">
-                        Plans
-                    </Link>
-                    <Link href="/contact" className="text-gray-600 hover:text-black transition">
-                        Contact
-                    </Link>
+                <div className="nav-desktop-links items-center gap-8 text-sm font-medium">
+                    {NAV_LINKS.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className="text-gray-600 hover:text-black transition"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
                 </div>
 
                 <div className="flex shrink-0 items-center gap-4 text-gray-700 sm:gap-5">
@@ -56,7 +82,7 @@ export default function Navbar() {
                         <ShoppingBag size={18} />
                     </Link>
                     <details ref={userMenuRef} className="group relative">
-                        <summary className="flex cursor-pointer list-none items-center rounded-full hover:text-black">
+                        <summary className="flex cursor-pointer list-none items-center rounded-full hover:text-black [&::-webkit-details-marker]:hidden">
                             <UserRound size={18} />
                             <span className="sr-only">Open account menu</span>
                         </summary>
@@ -93,43 +119,38 @@ export default function Navbar() {
                             </form>
                         </div>
                     </details>
-                    <details ref={mobileMenuRef} className="group md:hidden">
-                        <summary className="flex cursor-pointer list-none items-center rounded-full hover:text-black">
-                            <Menu size={22} />
-                            <span className="sr-only">Open mobile menu</span>
-                        </summary>
-                        <div className="fixed left-0 right-0 top-[61px] border-b border-gray-200 bg-white p-3 text-sm font-medium shadow-xl">
-                            <Link
-                                href="/"
-                                onClick={closeMenus}
-                                className="block rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-black"
-                            >
-                                Home
-                            </Link>
-                            <Link
-                                href="/products"
-                                onClick={closeMenus}
-                                className="block rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-black"
-                            >
-                                Products
-                            </Link>
-                            <Link
-                                href="/plans"
-                                onClick={closeMenus}
-                                className="block rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-black"
-                            >
-                                Plans
-                            </Link>
-                            <Link
-                                href="/contact"
-                                onClick={closeMenus}
-                                className="block rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-black"
-                            >
-                                Contact
-                            </Link>
-                        </div>
-                    </details>
+                    <button
+                        type="button"
+                        className="nav-mobile-toggle items-center rounded-full hover:text-black"
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="mobile-nav-menu"
+                        onClick={() => setMobileMenuOpen((open) => !open)}
+                    >
+                        {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                        <span className="sr-only">
+                            {mobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
+                        </span>
+                    </button>
                 </div>
+            </div>
+
+            <div
+                id="mobile-nav-menu"
+                className={`nav-mobile-panel border-t border-gray-200 bg-white shadow-xl ${mobileMenuOpen ? "is-open" : ""}`}
+                aria-hidden={!mobileMenuOpen}
+            >
+                <nav className="mx-auto flex max-w-sm flex-col items-center gap-1 px-4 py-6 text-sm font-medium">
+                    {NAV_LINKS.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={closeMenus}
+                            className="w-full rounded-md px-4 py-3 text-center text-gray-700 hover:bg-gray-50 hover:text-black"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
+                </nav>
             </div>
         </nav>
     );

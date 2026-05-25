@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Stripe subscriptions
+
+This project supports subscription upgrades, downgrades, cancel/reactivate, expiry notifications, and automatic cancellation via Stripe webhooks.
+
+See **[STRIPE_SUBSCRIPTIONS.md](./STRIPE_SUBSCRIPTIONS.md)** for setup steps (Supabase migration, Stripe prices, webhooks, cron).
+
+Quick start:
+
+```bash
+# 1. Run supabase/subscription-lifecycle.sql in Supabase SQL editor
+# 2. Create Stripe prices
+npm run stripe:setup
+# 3. Add printed price IDs + CRON_SECRET to .env.local
+# 4. Forward webhooks locally
+stripe listen --forward-to localhost:3000/api/webhooks
+```
+
 ## Getting Started
 
 First, run the development server:

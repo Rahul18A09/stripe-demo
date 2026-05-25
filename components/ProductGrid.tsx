@@ -72,11 +72,21 @@ export default function ProductGrid({
         },
         body: JSON.stringify({ productId, planId }),
       });
-      const data: { url?: string; error?: string } = await response.json();
+      const data: { url?: string; error?: string; code?: string } =
+        await response.json();
 
       if (response.status === 401) {
         window.location.href = "/login";
         return;
+      }
+
+      if (response.status === 409 && data.code === "ACTIVE_SUBSCRIPTION_EXISTS") {
+        window.location.href = "/account";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to subscribe");
       }
 
       if (data.url) {

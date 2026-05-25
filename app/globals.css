@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Navbar: reliable desktop vs mobile breakpoints */
+.nav-desktop-links {
+  display: none;
+}
+
+.nav-mobile-toggle {
+  display: inline-flex;
+}
+
+.nav-mobile-panel {
+  display: none;
+}
+
+.nav-mobile-panel.is-open {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .nav-desktop-links {
+    display: flex;
+  }
+
+  .nav-mobile-toggle,
+  .nav-mobile-panel {
+    display: none !important;
+  }
+}

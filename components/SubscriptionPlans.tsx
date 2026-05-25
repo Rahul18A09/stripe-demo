@@ -1,8 +1,14 @@
 "use client";
 
 import { Check, Headphones, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { SubscriptionPlan } from "@/data/subscription-plans";
+import {
+  comparePlans,
+  subscriptionPlans,
+  type SubscriptionPlan,
+} from "@/data/subscription-plans";
+import type { SubscriptionRecord } from "@/lib/account-subscriptions";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -14,39 +20,118 @@ function formatPrice(price: number) {
 
 export default function SubscriptionPlans({
   plans,
+  activeSubscription,
 }: {
   plans: SubscriptionPlan[];
+  activeSubscription?: SubscriptionRecord | null;
 }) {
+  const router = useRouter();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubscribe = async (planId: string) => {
+  const handlePlanAction = async (planId: string) => {
     setLoadingPlanId(planId);
+    setMessage(null);
+    setError(null);
 
     try {
+      if (activeSubscription) {
+        const change = comparePlans(activeSubscription.plan_id, planId);
+        if (change === "same") {
+          setMessage("You are already on this plan.");
+          return;
+        }
+
+        const response = await fetch("/api/subscription/change-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planId }),
+        });
+        const data: { message?: string; error?: string } = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Unable to change plan");
+        }
+
+        setMessage(data.message ?? "Plan updated");
+        router.refresh();
+        return;
+      }
+
       const response = await fetch("/api/subscribe", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId }),
       });
-      const data: { url?: string; error?: string } = await response.json();
+      const data: { url?: string; error?: string; code?: string } =
+        await response.json();
 
       if (response.status === 401) {
         window.location.href = "/login";
         return;
       }
 
+      if (response.status === 409 && data.code === "ACTIVE_SUBSCRIPTION_EXISTS") {
+        setError(data.error ?? "You already have an active subscription.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to subscribe");
+      }
+
       if (data.url) {
         window.location.href = data.url;
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoadingPlanId(null);
     }
   };
 
+  const getButtonLabel = (planId: string) => {
+    if (!activeSubscription) return "Subscribe Now";
+    const change = comparePlans(activeSubscription.plan_id, planId);
+    if (change === "same") return "Current plan";
+    if (change === "upgrade") return "Upgrade";
+    return "Downgrade";
+  };
+
+  const isCurrentPlan = (planId: string) =>
+    activeSubscription?.plan_id === planId;
+
   return (
     <section className="max-w-7xl mx-auto px-6 pb-16">
+      {activeSubscription && (
+        <div className="mb-6 rounded-lg border border-[#2f6f68]/20 bg-[#f3f8f7] px-4 py-3 text-sm text-gray-700">
+          You are on <strong>{activeSubscription.plan_name}</strong>
+          {activeSubscription.pending_plan_id && (
+            <>
+              {" "}
+              (changing to{" "}
+              {subscriptionPlans.find(
+                (plan) => plan.id === activeSubscription.pending_plan_id
+              )?.name}{" "}
+              next cycle)
+            </>
+          )}
+          . Choose another plan below to upgrade or schedule a downgrade.
+        </div>
+      )}
+
+      {message && (
+        <p className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {plans.map((plan) => (
           <article
@@ -67,15 +152,9 @@ export default function SubscriptionPlans({
               {plan.highlight ? <ShieldCheck /> : <Headphones />}
             </div>
 
-            <h2 className="mt-6 text-2xl font-bold text-gray-950">
-              {plan.name}
-            </h2>
-            <p className="mt-2 text-sm font-semibold text-[#2f6f68]">
-              {plan.tagline}
-            </p>
-            <p className="mt-4 text-sm leading-6 text-gray-600">
-              {plan.description}
-            </p>
+            <h2 className="mt-6 text-2xl font-bold text-gray-950">{plan.name}</h2>
+            <p className="mt-2 text-sm font-semibold text-[#2f6f68]">{plan.tagline}</p>
+            <p className="mt-4 text-sm leading-6 text-gray-600">{plan.description}</p>
 
             <div className="mt-7 flex items-end gap-2">
               <span className="text-4xl font-black text-gray-950">
@@ -95,14 +174,15 @@ export default function SubscriptionPlans({
 
             <button
               type="button"
-              onClick={() => handleSubscribe(plan.id)}
-              className={`mt-8 rounded-lg px-5 py-3 font-semibold transition ${
+              onClick={() => handlePlanAction(plan.id)}
+              disabled={isCurrentPlan(plan.id) || loadingPlanId === plan.id}
+              className={`mt-8 rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 plan.highlight
                   ? "bg-[#2f6f68] text-white hover:bg-[#285f59]"
                   : "bg-black text-white hover:bg-gray-900"
               }`}
             >
-              {loadingPlanId === plan.id ? "Opening..." : "Subscribe Now"}
+              {loadingPlanId === plan.id ? "Processing..." : getButtonLabel(plan.id)}
             </button>
           </article>
         ))}

@@ -1,9 +1,20 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
-import SubscriptionPlans from "@/components/SubscriptionPlans";
+import PlansSubscriptionSection from "@/components/PlansSubscriptionSection";
 import { subscriptionPlans } from "@/data/subscription-plans";
+import { getUserSubscriptionData } from "@/lib/account-subscriptions";
+import { createSupabaseServerClient } from "@/lib/supabase";
 
-export default function PlansPage() {
+export default async function PlansPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { activeSubscription } = user
+    ? await getUserSubscriptionData(user.id)
+    : { activeSubscription: null };
+
   return (
     <main className="min-h-screen bg-[#f7f8fb]">
       <Navbar />
@@ -15,11 +26,19 @@ export default function PlansPage() {
           Keep your headphones protected after checkout.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-600">
-          Pick a monthly care plan for support, service help, accessory savings,
-          and priority benefits for your audio gear.
+          Subscribe once, then manage your plan anytime — upgrade to a higher
+          tier, schedule a downgrade, or cancel at the end of your billing period.
         </p>
       </section>
-      <SubscriptionPlans plans={subscriptionPlans} />
+
+      <PlansSubscriptionSection
+        isLoggedIn={Boolean(user)}
+        activeSubscription={activeSubscription}
+        plans={subscriptionPlans}
+        userEmail={user?.email}
+        userId={user?.id}
+      />
+
       <Footer />
     </main>
   );

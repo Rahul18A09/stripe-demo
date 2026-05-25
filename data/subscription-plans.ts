@@ -4,6 +4,7 @@ export type SubscriptionPlan = {
   price: number;
   unitAmount: number;
   interval: "month";
+  tier: number;
   tagline: string;
   description: string;
   features: string[];
@@ -17,6 +18,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 99,
     unitAmount: 9900,
     interval: "month",
+    tier: 1,
     tagline: "Simple protection for everyday listeners",
     description:
       "A lightweight support plan for customers who want quick help and repair guidance.",
@@ -33,6 +35,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 199,
     unitAmount: 19900,
     interval: "month",
+    tier: 2,
     tagline: "Better service for regular headphone users",
     description:
       "Adds service shipping support and accessory savings for customers who use headphones daily.",
@@ -50,6 +53,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 299,
     unitAmount: 29900,
     interval: "month",
+    tier: 3,
     tagline: "Priority care for your best audio gear",
     description:
       "The strongest plan with priority support, extra warranty confidence, and early product access.",
@@ -62,6 +66,48 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   },
 ];
 
+const stripePriceEnvKeys: Record<string, string> = {
+  "care-basic": "STRIPE_PRICE_CARE_BASIC",
+  "care-plus": "STRIPE_PRICE_CARE_PLUS",
+  "care-premium": "STRIPE_PRICE_CARE_PREMIUM",
+};
+
 export function getSubscriptionPlanById(id: string) {
   return subscriptionPlans.find((plan) => plan.id === id);
 }
+
+export function getStripePriceId(planId: string): string | null {
+  const envKey = stripePriceEnvKeys[planId];
+  if (!envKey) return null;
+  return process.env[envKey] ?? null;
+}
+
+export function getPlanByStripePriceId(priceId: string) {
+  return subscriptionPlans.find(
+    (plan) => getStripePriceId(plan.id) === priceId
+  );
+}
+
+export function resolvePlanFromStripePriceId(priceId: string | null) {
+  if (!priceId) return null;
+  return getPlanByStripePriceId(priceId);
+}
+
+export function comparePlans(currentPlanId: string, targetPlanId: string) {
+  const current = getSubscriptionPlanById(currentPlanId);
+  const target = getSubscriptionPlanById(targetPlanId);
+
+  if (!current || !target) {
+    return null;
+  }
+
+  if (target.tier > current.tier) return "upgrade" as const;
+  if (target.tier < current.tier) return "downgrade" as const;
+  return "same" as const;
+}
+
+export const ACTIVE_SUBSCRIPTION_STATUSES = [
+  "active",
+  "trialing",
+  "past_due",
+] as const;

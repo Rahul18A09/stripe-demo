@@ -36,9 +36,17 @@ async function saveUserToSupabase({
   }
 }
 
+function safeRedirectPath(next: string) {
+  if (next.startsWith("/") && !next.startsWith("//")) {
+    return next;
+  }
+  return "/account?message=login";
+}
+
 export async function login(formData: FormData) {
   const email = readText(formData, "email");
   const password = readText(formData, "password");
+  const next = readText(formData, "next");
 
   console.log("EMAIL", email);
   console.log("PASSWORD", password);
@@ -76,7 +84,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/account?message=login");
+  redirect(next ? safeRedirectPath(next) : "/account?message=login");
 }
 
 export async function signup(formData: FormData) {

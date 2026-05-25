@@ -37,6 +37,9 @@ export default async function LoginPage({
           )}
 
           <form action={login} className="mt-7 space-y-5">
+            {params.next && (
+              <input type="hidden" name="next" value={params.next} />
+            )}
             <label className="block text-sm font-medium text-gray-700">
               Email
               <input
