@@ -49,6 +49,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    console.log(`[webhook] received ${event.type} (${event.id})`);
+
     if (await isWebhookProcessed(event.id)) {
       return NextResponse.json({ received: true, duplicate: true });
     }
@@ -143,12 +145,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? getSubscriptionPlanById(session.metadata.planId)
       : null) ?? resolvePlanFromSubscription(subscription);
 
-  await syncSubscriptionFromStripe(subscription, {
+  const subscriptionId = await syncSubscriptionFromStripe(subscription, {
     checkoutSessionId: session.id,
     userId: userId ?? undefined,
     userEmail: userEmail ?? undefined,
     plan: plan ?? undefined,
   });
+
+  if (userId && plan) {
+    await createSubscriptionNotification({
+      userId,
+      subscriptionId,
+      type: "subscription_active",
+      title: "Subscription active",
+      message: `Your ${plan.name} plan is now active. Manage it anytime from your account.`,
+    });
+  }
+
+  console.log(
+    `[webhook] checkout.session.completed synced subscription ${subscription.id} for user ${userId ?? "unknown"}`
+  );
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {

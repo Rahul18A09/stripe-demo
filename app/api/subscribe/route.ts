@@ -5,6 +5,7 @@ import {
   getSubscriptionPlanById,
   subscriptionPlans,
 } from "@/data/subscription-plans";
+import { stripePriceExists } from "@/lib/stripe-config";
 import { getOrCreateStripeCustomer } from "@/lib/stripe-customer";
 import { stripe } from "@/lib/stripe";
 import { getActiveSubscriptionForUser } from "@/lib/subscription-sync";
@@ -54,6 +55,17 @@ export async function POST(request: Request) {
         {
           error:
             "Stripe price is not configured for this plan. Run npm run stripe:setup and add price IDs to .env.local.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const priceValid = await stripePriceExists(stripePriceId);
+    if (!priceValid) {
+      return NextResponse.json(
+        {
+          error: `Stripe price ${stripePriceId} is not on your current account. Run npm run stripe:setup and update STRIPE_PRICE_* in .env.local, then restart the dev server.`,
+          code: "STRIPE_PRICE_INVALID",
         },
         { status: 500 }
       );

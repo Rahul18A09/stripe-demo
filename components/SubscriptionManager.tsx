@@ -36,6 +36,18 @@ export default function SubscriptionManager({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  if (!subscription.stripe_subscription_id) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <p className="font-semibold">Plan linked but not fully synced</p>
+        <p className="mt-1">
+          Click &quot;Sync subscription from Stripe&quot; above, then refresh this page
+          to manage upgrade, downgrade, and cancel.
+        </p>
+      </div>
+    );
+  }
+
   const pendingPlan = subscription.pending_plan_id
     ? subscriptionPlans.find((plan) => plan.id === subscription.pending_plan_id)
     : null;
@@ -59,7 +71,7 @@ export default function SubscriptionManager({
       }
 
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
         return;
       }
 

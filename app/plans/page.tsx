@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import PlansSubscriptionSection from "@/components/PlansSubscriptionSection";
 import { subscriptionPlans } from "@/data/subscription-plans";
 import { getUserSubscriptionData } from "@/lib/account-subscriptions";
+import { reconcileUserSubscriptions } from "@/lib/reconcile-subscriptions";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 export default async function PlansPage() {
@@ -10,6 +11,10 @@ export default async function PlansPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user) {
+    await reconcileUserSubscriptions(user.id);
+  }
 
   const { activeSubscription } = user
     ? await getUserSubscriptionData(user.id)

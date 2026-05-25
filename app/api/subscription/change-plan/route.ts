@@ -3,6 +3,8 @@ import {
   comparePlans,
   getSubscriptionPlanById,
 } from "@/data/subscription-plans";
+import { getStripePriceId } from "@/data/subscription-plans";
+import { stripePriceExists } from "@/lib/stripe-config";
 import {
   scheduleDowngrade,
   upgradeSubscription,
@@ -34,6 +36,18 @@ export async function POST(request: Request) {
 
     if (!targetPlan) {
       return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
+    }
+
+    const targetPriceId = getStripePriceId(targetPlan.id);
+    if (!targetPriceId || !(await stripePriceExists(targetPriceId))) {
+      return NextResponse.json(
+        {
+          error:
+            "Target plan price is missing on your Stripe account. Run npm run stripe:setup and update .env.local.",
+          code: "STRIPE_PRICE_INVALID",
+        },
+        { status: 500 }
+      );
     }
 
     const record = await getActiveSubscriptionForUser(user.id);

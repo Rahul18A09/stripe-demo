@@ -49,11 +49,18 @@ export async function getUserSubscriptionData(userId: string) {
 
   const subscriptions = (subscriptionsResult.data ?? []) as SubscriptionRecord[];
   const activeSubscription =
+    subscriptions.find(
+      (subscription) =>
+        ACTIVE_SUBSCRIPTION_STATUSES.includes(
+          subscription.status as (typeof ACTIVE_SUBSCRIPTION_STATUSES)[number]
+        ) && subscription.stripe_subscription_id
+    ) ??
     subscriptions.find((subscription) =>
       ACTIVE_SUBSCRIPTION_STATUSES.includes(
         subscription.status as (typeof ACTIVE_SUBSCRIPTION_STATUSES)[number]
       )
-    ) ?? null;
+    ) ??
+    null;
 
   return {
     subscriptions,

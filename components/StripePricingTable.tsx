@@ -18,7 +18,7 @@ export default function StripePricingTable({
 }: StripePricingTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
-  const [mountError, setMountError] = useState<string | null>(null);
+  const [scriptError, setScriptError] = useState(false);
 
   useEffect(() => {
     if (!scriptReady || !containerRef.current) {
@@ -41,18 +41,6 @@ export default function StripePricingTable({
     }
 
     container.appendChild(element);
-
-    const timer = window.setTimeout(() => {
-      const table = container.querySelector("stripe-pricing-table");
-      const iframe = table?.querySelector("iframe");
-      if (!iframe) {
-        setMountError(
-          "The pricing table did not load. Use a publishable key and pricing table ID from the same Stripe account (Dashboard → Developers → API keys and Pricing tables)."
-        );
-      }
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
   }, [
     scriptReady,
     pricingTableId,
@@ -62,19 +50,18 @@ export default function StripePricingTable({
   ]);
 
   return (
-    <div className="w-full min-h-[320px]">
+    <div className="w-full min-h-[280px]">
       <Script
         src="https://js.stripe.com/v3/pricing-table.js"
         strategy="afterInteractive"
         onReady={() => setScriptReady(true)}
-        onError={() =>
-          setMountError("Failed to load Stripe pricing table script.")
-        }
+        onError={() => setScriptError(true)}
       />
       <div ref={containerRef} className="w-full" />
-      {mountError && (
+      {scriptError && (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {mountError}
+          Failed to load the Stripe pricing table script. Check your network or ad
+          blocker.
         </p>
       )}
     </div>

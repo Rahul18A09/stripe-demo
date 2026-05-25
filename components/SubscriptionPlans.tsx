@@ -68,7 +68,7 @@ export default function SubscriptionPlans({
         await response.json();
 
       if (response.status === 401) {
-        window.location.href = "/login";
+        router.push("/login");
         return;
       }
 
@@ -82,7 +82,7 @@ export default function SubscriptionPlans({
       }
 
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

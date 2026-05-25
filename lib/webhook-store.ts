@@ -57,5 +57,6 @@ export async function markWebhookProcessed(event: Stripe.Event): Promise<void> {
     }
   } catch (error) {
     console.error("[webhook] markWebhookProcessed failed:", error);
+    throw error;
   }
 }

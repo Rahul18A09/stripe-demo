@@ -13,6 +13,7 @@ import {
   getUserSubscriptionData,
   type SubscriptionRecord,
 } from "@/lib/account-subscriptions";
+import { reconcileUserSubscriptions } from "@/lib/reconcile-subscriptions";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 type OrderRecord = {
@@ -55,6 +56,7 @@ async function getOrders(userId: string) {
       "id, product_name, product_image, amount, currency, status, created_at"
     )
     .eq("user_id", userId)
+    .eq("status", "completed")
     .order("created_at", { ascending: false });
 
   return {
@@ -80,6 +82,9 @@ export default async function AccountPage({
   }
 
   const email = user.email ?? "customer@example.com";
+
+  await reconcileUserSubscriptions(user.id);
+
   const [{ orders, error: ordersError }, subscriptionData] = await Promise.all([
     getOrders(user.id),
     getUserSubscriptionData(user.id),
