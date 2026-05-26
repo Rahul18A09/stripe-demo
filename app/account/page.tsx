@@ -83,7 +83,7 @@ export default async function AccountPage({
 
   const email = user.email ?? "customer@example.com";
 
-  await reconcileUserSubscriptions(user.id);
+  await reconcileUserSubscriptions(user.id, user.email);
 
   const [{ orders, error: ordersError }, subscriptionData] = await Promise.all([
     getOrders(user.id),

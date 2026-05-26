@@ -14,7 +14,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    await reconcileUserSubscriptions(user.id);
+    await reconcileUserSubscriptions(user.id, user.email);
     const { activeSubscription, subscriptions } =
       await getUserSubscriptionData(user.id);
 

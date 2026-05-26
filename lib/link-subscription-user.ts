@@ -45,6 +45,21 @@ export async function resolveUserIdFromCheckout(
   return customer.metadata?.supabaseUserId ?? null;
 }
 
+export async function resolveUserIdFromEmail(email: string | null | undefined) {
+  if (!email) {
+    return null;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: profile } = await supabase
+    .from("users")
+    .select("auth_user_id")
+    .eq("email", email)
+    .maybeSingle();
+
+  return profile?.auth_user_id ?? null;
+}
+
 export async function linkStripeCustomerToUser(
   customerId: string,
   userId: string,

@@ -12,6 +12,7 @@ import {
   linkStripeCustomerToUser,
   replacePriorActiveSubscriptions,
   resolveUserIdFromCheckout,
+  resolveUserIdFromEmail,
 } from "@/lib/link-subscription-user";
 import {
   createSubscriptionNotification,
@@ -118,12 +119,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     session.subscription as string
   );
 
-  const userId = await resolveUserIdFromCheckout(session);
   const userEmail =
     session.customer_details?.email ??
     session.metadata?.userEmail ??
     session.customer_email ??
     null;
+  const userId =
+    (await resolveUserIdFromCheckout(session)) ??
+    (await resolveUserIdFromEmail(userEmail));
 
   const customerId =
     typeof session.customer === "string"

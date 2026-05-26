@@ -13,7 +13,7 @@ export default async function PlansPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    await reconcileUserSubscriptions(user.id);
+    await reconcileUserSubscriptions(user.id, user.email);
   }
 
   const { activeSubscription } = user

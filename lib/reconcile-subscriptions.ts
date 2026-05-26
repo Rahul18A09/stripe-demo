@@ -1,5 +1,8 @@
 import { getSubscriptionPlanById } from "@/data/subscription-plans";
-import { resolveUserIdFromCheckout } from "@/lib/link-subscription-user";
+import {
+  linkStripeCustomerToUser,
+  resolveUserIdFromCheckout,
+} from "@/lib/link-subscription-user";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import { stripe } from "@/lib/stripe";
 import {
@@ -15,7 +18,7 @@ type SubscriptionRow = {
   stripe_subscription_id: string | null;
 };
 
-export async function reconcileUserSubscriptions(userId: string) {
+export async function reconcileUserSubscriptions(userId: string, userEmail?: string | null) {
   const supabase = createSupabaseAdminClient();
 
   const { data: rows, error } = await supabase
@@ -93,11 +96,50 @@ export async function reconcileUserSubscriptions(userId: string) {
     }
   }
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("users")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, email")
     .eq("auth_user_id", userId)
     .maybeSingle();
+
+  if (!profile?.stripe_customer_id && userEmail) {
+    const stripeCustomers = await stripe.customers.list({
+      email: userEmail,
+      limit: 10,
+    });
+
+    for (const customer of stripeCustomers.data) {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "all",
+        limit: 10,
+      });
+
+      const liveSubscription = subscriptions.data.find(
+        (subscription) =>
+          subscription.status === "active" ||
+          subscription.status === "trialing" ||
+          subscription.status === "past_due"
+      );
+
+      if (!liveSubscription) {
+        continue;
+      }
+
+      await linkStripeCustomerToUser(customer.id, userId, userEmail);
+      await syncSubscriptionFromStripe(liveSubscription, {
+        userId,
+        userEmail,
+        plan: resolvePlanFromSubscription(liveSubscription) ?? undefined,
+      });
+
+      profile = {
+        stripe_customer_id: customer.id,
+        email: userEmail,
+      };
+      break;
+    }
+  }
 
   if (!profile?.stripe_customer_id) {
     return;
