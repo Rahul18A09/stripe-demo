@@ -1,11 +1,9 @@
 import type Stripe from "stripe";
 
 export function getSubscriptionPeriod(subscription: Stripe.Subscription) {
-  const item = subscription.items.data[0];
-
   return {
-    current_period_start: item?.current_period_start ?? subscription.billing_cycle_anchor,
-    current_period_end: item?.current_period_end ?? subscription.billing_cycle_anchor,
+    current_period_start: subscription.current_period_start ?? subscription.billing_cycle_anchor,
+    current_period_end: subscription.current_period_end ?? subscription.billing_cycle_anchor,
   };
 }
 

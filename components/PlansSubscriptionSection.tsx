@@ -20,7 +20,7 @@ export default function PlansSubscriptionSection({
 }) {
   if (!isLoggedIn) {
     return (
-      <div className="max-w-7xl mx-auto px-6 pb-16 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 pb-16 space-y-10">
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-950">Sign in to manage your plan</h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -34,10 +34,25 @@ export default function PlansSubscriptionSection({
             Log in
           </Link>
         </div>
+
         <section>
-          <h2 className="text-2xl font-bold text-gray-950">Care plans</h2>
+          <h2 className="text-2xl font-bold text-gray-950">Choose with Stripe</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Subscribe using Stripe&apos;s pricing table. Your account is linked after
+            checkout via webhooks.
+          </p>
           <div className="mt-6">
             <StripePricingTableSection />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-gray-950">Or choose a plan here</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Same plans with in-app checkout.
+          </p>
+          <div className="mt-6">
+            <SubscriptionPlans plans={plans} activeSubscription={null} />
           </div>
         </section>
       </div>

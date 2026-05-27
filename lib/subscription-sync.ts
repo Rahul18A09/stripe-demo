@@ -97,37 +97,45 @@ export async function syncSubscriptionFromStripe(
   const supabase = createSupabaseAdminClient();
   const priceId = getSubscriptionPriceId(subscription);
   const plan =
-    options?.plan ??
-    resolvePlanFromSubscription(subscription) ??
-    (priceId ? getPlanByStripePriceId(priceId) : undefined);
+      options?.plan ??
+      resolvePlanFromSubscription(subscription) ??
+      (priceId ? getPlanByStripePriceId(priceId) : undefined);
 
   if (!plan) {
     console.error(
-      "[subscription-sync] Unknown Stripe price:",
-      priceId,
-      "— map it in STRIPE_PRICE_CARE_* env vars"
+        "[subscription-sync] Unknown Stripe price:",
+        priceId,
+        "— map it in STRIPE_PRICE_CARE_* env vars"
     );
     throw new Error(
-      `Unable to resolve plan for Stripe price ${priceId ?? "unknown"}. Check STRIPE_PRICE_* env vars match your Stripe prices.`
+        `Unable to resolve plan for Stripe price ${priceId ?? "unknown"}. Check STRIPE_PRICE_* env vars match your Stripe prices.`
     );
   }
 
   const userId =
-    options?.userId ??
-    subscription.metadata?.supabaseUserId ??
-    (await resolveUserIdFromStripeCustomer(subscription)) ??
-    null;
+      options?.userId ??
+      subscription.metadata?.supabaseUserId ??
+      (await resolveUserIdFromStripeCustomer(subscription)) ??
+      null;
+
+
+  console.log("[SYNC] userId:", userId);
+  console.log("[SYNC] subscriptionId:", subscription.id);
+  console.log("[SYNC] priceId:", priceId);
+  console.log("[SYNC] plan:", plan.id);
+
+
   const customerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer.id;
+      typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer.id;
 
   const period = getSubscriptionPeriod(subscription);
 
   const payload = {
     user_id: userId,
     user_email:
-      options?.userEmail ?? subscription.metadata?.userEmail ?? "unknown@example.com",
+        options?.userEmail ?? subscription.metadata?.userEmail ?? "unknown@example.com",
     stripe_customer_id: customerId,
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
@@ -142,66 +150,65 @@ export async function syncSubscriptionFromStripe(
     current_period_end: new Date(period.current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end,
     canceled_at: subscription.canceled_at
-      ? new Date(subscription.canceled_at * 1000).toISOString()
-      : null,
+        ? new Date(subscription.canceled_at * 1000).toISOString()
+        : null,
     pending_plan_id: subscription.metadata?.pendingPlanId ?? null,
     product_id: options?.product?.id ?? subscription.metadata?.productId ?? null,
     product_name:
-      options?.product?.name ??
-      subscription.metadata?.productName ??
-      "General headphone care",
+        options?.product?.name ??
+        subscription.metadata?.productName ??
+        "General headphone care",
     product_image: options?.product?.image ?? null,
     updated_at: new Date().toISOString(),
   };
 
-  const { data: existing } = await supabase
-    .from("product_subscriptions")
-    .select("id")
-    .eq("stripe_subscription_id", subscription.id)
-    .maybeSingle();
+  console.log("[SYNC PAYLOAD]", payload);
 
-  if (existing) {
-    const { error } = await supabase
+
+//   const {data, error} = await supabase
+//       .from("product_subscriptions")
+//       .upsert(
+//           {
+//             ...payload,
+//             status: subscription.status,
+//           },
+//           {
+//             onConflict: "stripe_subscription_id",
+//           }
+//       )
+//       .select("id")
+//       .single();
+//
+//   if (error) throw error;
+//
+//   return data.id;
+// }
+
+
+  const {data, error} = await supabase
       .from("product_subscriptions")
-      .update(payload)
-      .eq("id", existing.id);
+      .upsert(
+          {
+            ...payload,
+            status: subscription.status,
+          },
+          {
+            onConflict: "stripe_subscription_id",
+          }
+      )
+      .select();
 
-    if (error) throw error;
-    return existing.id;
+  console.log("[SUPABASE DATA]", data);
+  console.log("[SUPABASE ERROR]", error);
+
+  if (error) {
+    console.error("[UPSERT FAILED]", error);
+    throw error;
   }
 
-  const { data: bySession, error: sessionLookupError } = options?.checkoutSessionId
-    ? await supabase
-        .from("product_subscriptions")
-        .select("id")
-        .eq("stripe_checkout_session_id", options.checkoutSessionId)
-        .maybeSingle()
-    : { data: null, error: null };
-
-  if (sessionLookupError) throw sessionLookupError;
-
-  if (bySession) {
-    const { error } = await supabase
-      .from("product_subscriptions")
-      .update(payload)
-      .eq("id", bySession.id);
-
-    if (error) throw error;
-    return bySession.id;
-  }
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("product_subscriptions")
-    .insert({
-      ...payload,
-      status: subscription.status,
-    })
-    .select("id")
-    .single();
-
-  if (insertError) throw insertError;
-  return inserted.id;
+  return data?.[0]?.id;
 }
+
 
 export async function markSubscriptionCanceled(subscription: Stripe.Subscription) {
   const supabase = createSupabaseAdminClient();

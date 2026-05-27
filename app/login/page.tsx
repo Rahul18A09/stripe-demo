@@ -9,7 +9,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{
     error?: string;
-    message?: "logout" | "signup" | "check-email";
+    message?: "logout" | "signup" | "check-email" | "confirmed";
     next?: string;
   }>;
 }) {
@@ -30,6 +30,8 @@ export default async function LoginPage({
             <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
               {params.error === "supabase"
                 ? "Supabase is not ready. Check your environment keys and users table."
+                : params.error === "email-not-confirmed"
+                  ? "Please confirm your email before logging in."
                 : params.error === "invalid"
                   ? "Invalid email or password."
                 : "Please enter your email and password."}

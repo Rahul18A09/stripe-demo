@@ -68,7 +68,10 @@ async function getOrders(userId: string) {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ message?: "login" | "signup"; subscribed?: string }>;
+  searchParams: Promise<{
+    message?: "login" | "signup" | "confirmed";
+    subscribed?: string;
+  }>;
 }) {
   const params = await searchParams;
   await cookies();

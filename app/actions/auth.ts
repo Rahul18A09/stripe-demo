@@ -36,6 +36,10 @@ async function saveUserToSupabase({
   }
 }
 
+function isEmailNotConfirmedError(message?: string) {
+  return message?.toLowerCase().includes("email not confirmed") ?? false;
+}
+
 function safeRedirectPath(next: string) {
   if (next.startsWith("/") && !next.startsWith("//")) {
     return next;
@@ -66,6 +70,10 @@ export async function login(formData: FormData) {
   console.log("LOGIN DATA:", data);
 
   if (error || !data.user) {
+    if (isEmailNotConfirmedError(error?.message)) {
+      redirect("/login?error=email-not-confirmed");
+    }
+
     redirect("/login?error=invalid");
   }
 
@@ -132,15 +140,13 @@ export async function signup(formData: FormData) {
       console.error("DATABASE ERROR:", error);
       redirect("/signup?error=supabase");
     }
+
+    revalidatePath("/", "layout");
+    redirect("/account?message=signup");
   }
 
   revalidatePath("/", "layout");
-
-  if (!data.session) {
-    redirect("/login?message=check-email");
-  }
-
-  redirect("/account?message=signup");
+  redirect("/login?message=check-email");
 }
 
 export async function logout() {

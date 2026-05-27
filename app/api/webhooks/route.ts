@@ -105,10 +105,39 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (session.mode === "payment") {
       const { createSupabaseAdminClient } = await import("@/lib/supabase-admin");
       const supabase = createSupabaseAdminClient();
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "completed" })
-        .eq("stripe_checkout_session_id", session.id);
+
+      // const { error } = await supabase
+      //   .from("orders")
+      //   .update({ status: "completed" })
+      //   .eq("stripe_checkout_session_id", session.id);
+
+
+
+      // console.log(
+      //     "[WEBHOOK] Looking for order session:",
+      //     session.id
+      // );
+
+      console.log("========== WEBHOOK DEBUG ==========");
+      console.log("Session ID:", session.id);
+      console.log("Session Customer:", session.customer);
+      console.log("User Email:", userEmail);
+      console.log("Resolved UserId:", userId);
+      console.log("CustomerId:", customerId);
+      console.log("==================================");
+
+      const { data, error } = await supabase
+          .from("orders")
+          .update({
+            status: "completed",
+          })
+          .eq("stripe_checkout_session_id", session.id)
+          .select();
+
+      console.log("[WEBHOOK] Updated rows:", data);
+
+      if (error) throw error;
+
 
       if (error) throw error;
     }
@@ -148,12 +177,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? getSubscriptionPlanById(session.metadata.planId)
       : null) ?? resolvePlanFromSubscription(subscription);
 
+  // const subscriptionId = await syncSubscriptionFromStripe(subscription, {
+  //   checkoutSessionId: session.id,
+  //   userId: userId ?? undefined,
+  //   userEmail: userEmail ?? undefined,
+  //   plan: plan ?? undefined,
+  // });
+
+
+  console.log("[SYNC] START");
+
   const subscriptionId = await syncSubscriptionFromStripe(subscription, {
     checkoutSessionId: session.id,
     userId: userId ?? undefined,
     userEmail: userEmail ?? undefined,
     plan: plan ?? undefined,
   });
+
+  console.log("[SYNC] SUCCESS:", subscriptionId);
+
 
   if (userId && plan) {
     await createSubscriptionNotification({
