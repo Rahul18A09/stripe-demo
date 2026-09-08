@@ -1,7 +1,6 @@
 
 "use client";
 
-
 export default function CheckoutButton() {
 
   const handleCheckout = async () => {
