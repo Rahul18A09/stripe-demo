@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { Headphones, Mail, MapPin, Phone } from "lucide-react";
 
