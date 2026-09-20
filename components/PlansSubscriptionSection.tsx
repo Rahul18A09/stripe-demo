@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import StripePricingTableSection from "@/components/StripePricingTableSection";
 import SubscriptionManager from "@/components/SubscriptionManager";
