@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Headphones, Mail, MapPin, Phone } from "lucide-react";
 
+
 export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
